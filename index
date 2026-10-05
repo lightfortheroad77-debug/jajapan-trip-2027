@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WanderSync - Real-Time Travel Itinerary Planner</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+    .gradient-banner {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.85), rgba(168, 85, 247, 0.85)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- Top Global Bar -->
+  <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-teal-500 rounded-xl text-white shadow-lg shadow-teal-500/30">
+          <i data-lucide="compass" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg tracking-tight flex items-center gap-2">
+            WanderSync <span class="text-xs px-2 py-0.5 bg-teal-500/20 text-teal-300 font-semibold rounded-full border border-teal-500/30">Live Sync</span>
+          </h1>
+          <p class="text-xs text-slate-400">Collaborative Travel Planner</p>
+        </div>
+      </div>
+
+      <!-- Room & Link Sharing controls -->
+      <div class="flex items-center space-x-2">
+        <div class="hidden sm:flex items-center bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700 text-xs text-slate-300">
+          <span class="mr-2 font-medium text-slate-400">Trip Code:</span>
+          <span id="current-room-display" class="font-mono font-bold text-teal-400">...</span>
+        </div>
+        <button id="btn-share" class="bg-teal-500 hover:bg-teal-600 active:scale-95 text-white text-xs sm:text-sm font-semibold px-3.5 py-1.5 sm:py-2 rounded-lg flex items-center gap-1.5 transition-all shadow-md shadow-teal-500/20">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
+          <span>Share Trip</span>
+        </button>
+        <button id="btn-switch-room" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-medium px-3 py-1.5 sm:py-2 rounded-lg border border-slate-700 transition">
+          Switch Trip
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Live Collaboration Status Toast -->
+  <div id="sync-status" class="bg-teal-600 text-white text-xs py-1 px-4 text-center font-medium shadow-inner flex items-center justify-center gap-2 transition-all">
+    <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
+    <span id="sync-status-text">Connected to live trip updates</span>
+  </div>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+
+    <!-- Hero / Trip Overview Card -->
+    <section class="relative rounded-3xl overflow-hidden shadow-xl text-white gradient-banner">
+      <div class="p-6 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-slate-900/40">
+        <div class="space-y-3 max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold uppercase tracking-wider text-teal-100 border border-white/20">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+            <span id="display-destination">Bali, Indonesia</span>
+          </div>
+          <h2 id="display-trip-title" class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white drop-shadow-md">
+            Summer Tropical Getaway
+          </h2>
+          <div class="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-100">
+            <span class="flex items-center gap-1.5">
+              <i data-lucide="calendar" class="w-4 h-4 text-teal-300"></i>
+              <span id="display-dates">Jul 12, 2026 - Jul 18, 2026</span>
+            </span>
+            <span class="flex items-center gap-1.5">
+              <i data-lucide="users" class="w-4 h-4 text-teal-300"></i>
+              <span id="display-travelers">4 Travelers</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <button id="btn-edit-trip" class="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/30 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition w-full sm:w-auto">
+            <i data-lucide="edit-3" class="w-4 h-4"></i> Edit Trip Details
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats & Quick Reference Info Grid -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <!-- Quick Info Card 1: Flight & Stay -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between relative overflow-hidden group">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Flight & Stay</p>
+            <h3 id="quick-flight-info" class="text-sm font-bold text-slate-800 mt-1">SQ942 - Denpasar (DPS)</h3>
+            <p id="quick-hotel-info" class="text-xs text-slate-500 mt-0.5">Ubud Tropical Villa #4</p>
+          </div>
+          <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+            <i data-lucide="plane-landing" class="w-5 h-5"></i>
+          </div>
+        </div>
+        <button id="btn-edit-pinned" class="text-xs text-teal-600 font-semibold mt-3 hover:underline text-left flex items-center gap-1">
+          <i data-lucide="settings" class="w-3.5 h-3.5"></i> Update Quick Info
+        </button>
+      </div>
+
+      <!-- Quick Info Card 2: Emergency & Support -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Emergency Contacts</p>
+            <h3 id="quick-emergency-info" class="text-sm font-bold text-slate-800 mt-1">Embassy: +62 361 0000</h3>
+            <p id="quick-insurance-info" class="text-xs text-slate-500 mt-0.5">Insurance Policy: #AX-99201</p>
+          </div>
+          <div class="p-2.5 bg-rose-50 text-rose-600 rounded-xl">
+            <i data-lucide="shield-alert" class="w-5 h-5"></i>
+          </div>
+        </div>
+        <span class="text-xs text-slate-400 mt-3 flex items-center gap-1">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i> Visible to all guests
+        </span>
+      </div>
+
+      <!-- Quick Info Card 3: Total Budget Tracker -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Estimated Total Budget</p>
+            <h3 id="stat-total-budget" class="text-xl font-extrabold text-slate-900 mt-1">$0.00</h3>
+            <p id="stat-budget-breakdown" class="text-xs text-slate-500 mt-0.5">0 items with costs</p>
+          </div>
+          <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+            <i data-lucide="wallet" class="w-5 h-5"></i>
+          </div>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
+          <div id="stat-budget-progress" class="bg-emerald-500 h-1.5 rounded-full" style="width: 100%"></div>
+        </div>
+      </div>
+
+      <!-- Quick Info Card 4: Quick Add Action -->
+      <div class="bg-gradient-to-br from-teal-500 to-emerald-600 p-5 rounded-2xl shadow-lg text-white flex flex-col justify-between">
+        <div>
+          <h3 class="font-bold text-base">Got a new plan?</h3>
+          <p class="text-xs text-teal-100 mt-1">Add flights, activities, spots or notes directly to the schedule.</p>
+        </div>
+        <button id="btn-open-add-item" class="mt-4 bg-white text-teal-800 hover:bg-slate-100 font-bold text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center justify-center gap-2 active:scale-95">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Schedule Item
+        </button>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <div class="border-b border-slate-200 flex items-center space-x-6 overflow-x-auto custom-scrollbar pt-2">
+      <button data-tab="tab-itinerary" class="tab-btn font-bold text-sm text-teal-600 border-b-2 border-teal-600 pb-3 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="calendar-range" class="w-4 h-4"></i> Itinerary Schedule
+      </button>
+      <button data-tab="tab-budget" class="tab-btn font-semibold text-sm text-slate-500 hover:text-slate-800 border-b-2 border-transparent pb-3 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="pie-chart" class="w-4 h-4"></i> Budget & Expenses
+      </button>
+      <button data-tab="tab-packing" class="tab-btn font-semibold text-sm text-slate-500 hover:text-slate-800 border-b-2 border-transparent pb-3 flex items-center gap-2 whitespace-nowrap">
+        <i data-lucide="check-square" class="w-4 h-4"></i> Group Packing List
+      </button>
+    </div>
+
+    <!-- TAB 1: ITINERARY SCHEDULE -->
+    <div id="tab-itinerary" class="tab-content space-y-6">
+      
+      <!-- Filter Bar & Day Selector -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <!-- Day Pills -->
+        <div id="day-selector-container" class="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 custom-scrollbar">
+          <!-- Dynamic Day Buttons JS -->
+        </div>
+
+        <!-- Category Filter -->
+        <div class="flex items-center space-x-2 w-full sm:w-auto">
+          <span class="text-xs font-semibold text-slate-400 whitespace-nowrap">Category:</span>
+          <select id="filter-category" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-700 font-medium">
+            <option value="ALL">All Categories</option>
+            <option value="Flight">✈️ Flight</option>
+            <option value="Hotel">🏨 Hotel</option>
+            <option value="Activity">🧗 Activity</option>
+            <option value="Food">🍽️ Food & Drinks</option>
+            <option value="Transport">🚕 Transport</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Timeline Items Container -->
+      <div class="relative pl-0 sm:pl-4">
+        <!-- Vertical timeline line on desktop -->
+        <div class="hidden sm:block absolute left-8 top-4 bottom-4 w-0.5 bg-slate-200"></div>
+
+        <div id="itinerary-items-list" class="space-y-4">
+          <!-- Dynamically populated itinerary list -->
+        </div>
+
+        <div id="itinerary-empty-state" class="hidden text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">
+          <div class="p-3 bg-teal-50 text-teal-600 rounded-full w-12 h-12 mx-auto flex items-center justify-center mb-3">
+            <i data-lucide="calendar" class="w-6 h-6"></i>
+          </div>
+          <h4 class="text-base font-bold text-slate-700">No events scheduled for this day yet</h4>
+          <p class="text-xs text-slate-500 mt-1">Start collaborating by adding your first flight, hotel, or activity!</p>
+          <button class="btn-trigger-add-item mt-4 bg-teal-500 hover:bg-teal-600 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow">
+            + Add Schedule Item
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: BUDGET & EXPENSES -->
+    <div id="tab-budget" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Category Cost Breakdown Card -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+          <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+            <i data-lucide="bar-chart-2" class="w-5 h-5 text-teal-600"></i> Category Breakdown
+          </h3>
+          <div id="budget-category-list" class="space-y-3">
+            <!-- Dynamic Category Breakdown items -->
+          </div>
+        </div>
+
+        <!-- Itemized Expense Table -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+              <i data-lucide="receipt" class="w-5 h-5 text-teal-600"></i> Expense List
+            </h3>
+            <span class="text-xs text-slate-400">Costs calculated from itinerary schedule</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
+                <tr>
+                  <th class="p-3 rounded-l-lg">Title</th>
+                  <th class="p-3">Category</th>
+                  <th class="p-3">Assigned / Paid By</th>
+                  <th class="p-3 text-right rounded-r-lg">Cost ($)</th>
+                </tr>
+              </thead>
+              <tbody id="budget-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 3: PACKING LIST -->
+    <div id="tab-packing" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div>
+            <h3 class="font-bold text-lg text-slate-800">Shared Group Packing List</h3>
+            <p class="text-xs text-slate-500">Check off items together live in real time.</p>
+          </div>
+
+          <!-- Add Item Form Inline -->
+          <form id="form-add-packing" class="flex items-center gap-2 w-full sm:w-auto">
+            <input type="text" id="input-packing-title" placeholder="e.g., Sunscreen, Power Adapter..." required class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-teal-500 outline-none w-full sm:w-60">
+            <input type="text" id="input-packing-assignee" placeholder="Who brings it?" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-teal-500 outline-none w-full sm:w-36">
+            <button type="submit" class="bg-teal-500 hover:bg-teal-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition whitespace-nowrap shadow">
+              Add Item
+            </button>
+          </form>
+        </div>
+
+        <div id="packing-items-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          <!-- Dynamic packing list checkboxes -->
+        </div>
+
+        <div id="packing-empty-state" class="hidden text-center py-8 text-slate-400 text-xs">
+          No packing items yet. Add one above!
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL 1: Add / Edit Itinerary Item -->
+  <div id="modal-item" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-5 bg-slate-900 text-white flex justify-between items-center">
+        <h3 id="modal-item-title" class="font-bold text-base flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-teal-400"></i> Add Schedule Item
+        </h3>
+        <button id="btn-close-item-modal" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="form-item" class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs">
+        <input type="hidden" id="form-item-id" value="">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Day / Date</label>
+            <select id="form-item-day" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+              <!-- Dynamically generated day options -->
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Time (e.g. 10:00 AM)</label>
+            <input type="text" id="form-item-time" placeholder="10:00 AM" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Activity / Title</label>
+          <input type="text" id="form-item-title-input" placeholder="e.g. Visit Tanlot Temple" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Category</label>
+            <select id="form-item-category" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="Flight">✈️ Flight</option>
+              <option value="Hotel">🏨 Hotel</option>
+              <option value="Activity" selected>🧗 Activity</option>
+              <option value="Food">🍽️ Food & Drinks</option>
+              <option value="Transport">🚕 Transport</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Estimated Cost ($)</label>
+            <input type="number" step="0.01" min="0" id="form-item-cost" placeholder="0.00" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Location / Map Link</label>
+            <input type="text" id="form-item-location" placeholder="e.g. Ubud Market or Maps URL" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Who's Going / Assigned</label>
+            <input type="text" id="form-item-assignee" placeholder="e.g. Everyone, Sarah, Alex" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Notes & Details</label>
+          <textarea id="form-item-notes" rows="3" placeholder="Confirmation codes, dress codes, tips..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+          <button type="button" id="btn-cancel-item" class="px-4 py-2 text-slate-500 hover:text-slate-800 font-semibold rounded-xl">Cancel</button>
+          <button type="submit" class="bg-teal-500 hover:bg-teal-600 text-white font-bold px-5 py-2 rounded-xl transition shadow">
+            Save Item
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Edit Trip Meta Details -->
+  <div id="modal-trip" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+      <div class="p-5 bg-slate-900 text-white flex justify-between items-center">
+        <h3 class="font-bold text-base flex items-center gap-2">
+          <i data-lucide="edit" class="w-5 h-5 text-teal-400"></i> Edit Trip Info
+        </h3>
+        <button id="btn-close-trip-modal" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="form-trip" class="p-6 space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Trip Name</label>
+          <input type="text" id="input-trip-title" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Destination</label>
+          <input type="text" id="input-trip-destination" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Start Date</label>
+            <input type="date" id="input-trip-start" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">End Date</label>
+            <input type="date" id="input-trip-end" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Travelers Summary</label>
+          <input type="text" id="input-trip-travelers" placeholder="e.g. 4 Friends" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+          <button type="button" id="btn-cancel-trip" class="px-4 py-2 text-slate-500 font-semibold rounded-xl">Cancel</button>
+          <button type="submit" class="bg-teal-500 hover:bg-teal-600 text-white font-bold px-5 py-2 rounded-xl transition shadow">
+            Update Trip
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Quick Info Edit -->
+  <div id="modal-pinned" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+      <div class="p-5 bg-slate-900 text-white flex justify-between items-center">
+        <h3 class="font-bold text-base flex items-center gap-2">
+          <i data-lucide="info" class="w-5 h-5 text-teal-400"></i> Pinned Quick Details
+        </h3>
+        <button id="btn-close-pinned-modal" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="form-pinned" class="p-6 space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Flight Info</label>
+          <input type="text" id="input-pinned-flight" placeholder="e.g. SQ942 - Denpasar (DPS)" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Hotel / Accommodation Address</label>
+          <input type="text" id="input-pinned-hotel" placeholder="e.g. Villa #4, Seminyak" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Emergency Numbers</label>
+          <input type="text" id="input-pinned-emergency" placeholder="e.g. Embassy +62 361 000" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Insurance / Confirmations</label>
+          <input type="text" id="input-pinned-insurance" placeholder="e.g. Policy #AX-9920" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+          <button type="button" id="btn-cancel-pinned" class="px-4 py-2 text-slate-500 font-semibold rounded-xl">Cancel</button>
+          <button type="submit" class="bg-teal-500 hover:bg-teal-600 text-white font-bold px-5 py-2 rounded-xl transition shadow">
+            Save Quick Info
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Room Switcher -->
+  <div id="modal-room" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 text-center space-y-4">
+      <div class="w-12 h-12 bg-teal-100 text-teal-600 rounded-2xl flex items-center justify-center mx-auto">
+        <i data-lucide="compass" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-lg font-extrabold text-slate-800">Join or Create Trip</h3>
+      <p class="text-xs text-slate-500">Enter a custom trip code (e.g., <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700">bali-2026</code>) to create or join an itinerary together.</p>
+
+      <input type="text" id="input-room-code" placeholder="trip-code-123" class="w-full text-center font-mono text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 outline-none focus:ring-2 focus:ring-teal-500 uppercase font-bold">
+
+      <div class="flex items-center space-x-2 pt-2">
+        <button id="btn-close-room-modal" class="w-1/2 py-2.5 text-xs text-slate-500 font-semibold rounded-xl border border-slate-200">Cancel</button>
+        <button id="btn-join-room-confirm" class="w-1/2 py-2.5 text-xs bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl shadow transition">Go to Trip</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase App & Firestore Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+      getAuth, 
+      signInAnonymously, 
+      signInWithCustomToken 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      onSnapshot, 
+      collection, 
+      addDoc, 
+      updateDoc, 
+      deleteDoc 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // 1. Firebase Initialization Config
+    const firebaseConfig = typeof __firebase_config !== 'undefined' 
+      ? JSON.parse(__firebase_config) 
+      : { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo-app" };
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-travel-app';
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Global App State
+    let currentUser = null;
+    let currentRoomId = getRoomFromHash() || "bali-summer-2026";
+    let activeDayIndex = 0;
+    let selectedCategoryFilter = "ALL";
+
+    let tripMeta = {
+      title: "Summer Tropical Getaway",
+      destination: "Bali, Indonesia",
+      startDate: "2026-07-12",
+      endDate: "2026-07-18",
+      travelers: "4 Travelers",
+      pinned: {
+        flight: "SQ942 - Denpasar (DPS)",
+        hotel: "Ubud Tropical Villa #4",
+        emergency: "Embassy: +62 361 0000",
+        insurance: "Insurance Policy: #AX-99201"
+      }
+    };
+
+    let itineraryItems = [];
+    let packingItems = [];
+
+    // Unsubscribe listeners for Firestore real-time sync
+    let metaUnsub = null;
+    let itineraryUnsub = null;
+    let packingUnsub = null;
+
+    // Helper: Parse hash room code
+    function getRoomFromHash() {
+      const hash = window.location.hash.replace('#', '').trim();
+      return hash.length > 0 ? hash.toLowerCase() : null;
+    }
+
+    function setRoomHash(roomCode) {
+      window.location.hash = roomCode;
+      document.getElementById('current-room-display').innerText = roomCode.toUpperCase();
+    }
+
+    // 2. Auth setup
+    async function initAuth() {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+        currentUser = auth.currentUser;
+        console.log("Authenticated as:", currentUser?.uid);
+        
+        // Start listening to the room
+        setRoomHash(currentRoomId);
+        setupRoomListeners(currentRoomId);
+      } catch (err) {
+        console.error("Auth error:", err);
+        updateSyncStatus("Offline / Demo Mode", false);
+      }
+    }
+
+    function updateSyncStatus(msg, isSuccess = true) {
+      const statusContainer = document.getElementById('sync-status');
+      const statusText = document.getElementById('sync-status-text');
+      statusText.innerText = msg;
+      if (isSuccess) {
+        statusContainer.className = "bg-teal-600 text-white text-xs py-1 px-4 text-center font-medium shadow-inner flex items-center justify-center gap-2 transition-all";
+      } else {
+        statusContainer.className = "bg-rose-600 text-white text-xs py-1 px-4 text-center font-medium shadow-inner flex items-center justify-center gap-2 transition-all";
+      }
+    }
+
+    // 3. Real-time Firestore Listeners
+    function setupRoomListeners(roomId) {
+      if (!currentUser) return;
+
+      // Clean old listeners if switching room
+      if (metaUnsub) metaUnsub();
+      if (itineraryUnsub) itineraryUnsub();
+      if (packingUnsub) packingUnsub();
+
+      updateSyncStatus(`Syncing with live room: ${roomId.toUpperCase()}...`);
+
+      // Firestore Paths (RULE 1 Compliance)
+      const metaDocRef = doc(db, 'artifacts', appId, 'public', 'data', `trip_${roomId}_meta`, 'info');
+      const itineraryColRef = collection(db, 'artifacts', appId, 'public', 'data', `trip_${roomId}_itinerary`);
+      const packingColRef = collection(db, 'artifacts', appId, 'public', 'data', `trip_${roomId}_packing`);
+
+      // Meta Doc Listener
+      metaUnsub = onSnapshot(metaDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          tripMeta = { ...tripMeta, ...docSnap.data() };
+        } else {
+          // Initialize default meta in Firestore if missing
+          setDoc(metaDocRef, tripMeta).catch(e => console.error("Error setting default meta", e));
+        }
+        renderTripMeta();
+        renderDayTabs();
+      }, (err) => {
+        console.error("Meta snapshot error:", err);
+        updateSyncStatus("Sync error on trip info", false);
+      });
+
+      // Itinerary Snapshot (RULE 2 Compliance: Simple collection query)
+      itineraryUnsub = onSnapshot(itineraryColRef, (snapshot) => {
+        itineraryItems = [];
+        snapshot.forEach((d) => {
+          itineraryItems.push({ id: d.id, ...d.data() });
+        });
+        renderItinerary();
+        renderBudget();
+        updateSyncStatus(`Live • ${itineraryItems.length} items synced`);
+      }, (err) => {
+        console.error("Itinerary snapshot error:", err);
+      });
+
+      // Packing Snapshot
+      packingUnsub = onSnapshot(packingColRef, (snapshot) => {
+        packingItems = [];
+        snapshot.forEach((d) => {
+          packingItems.push({ id: d.id, ...d.data() });
+        });
+        renderPackingList();
+      }, (err) => {
+        console.error("Packing snapshot error:", err);
+      });
+    }
+
+    // 4. Rendering Functions
+    function getTripDaysArray() {
+      const start = new Date(tripMeta.startDate || "2026-07-12");
+      const end = new Date(tripMeta.endDate || "2026-07-18");
+      const dayCount = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
+      
+      const days = [];
+      for (let i = 0; i < dayCount; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        days.push({
+          index: i,
+          dateStr: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          fullDate: d.toISOString().split('T')[0]
+        });
+      }
+      return days;
+    }
+
+    function renderTripMeta() {
+      document.getElementById('display-trip-title').innerText = tripMeta.title || "My Travel Itinerary";
+      document.getElementById('display-destination').innerText = tripMeta.destination || "Destination";
+      
+      const days = getTripDaysArray();
+      const dateText = days.length > 0 
+        ? `${days[0].dateStr} - ${days[days.length - 1].dateStr}` 
+        : `${tripMeta.startDate} - ${tripMeta.endDate}`;
+      document.getElementById('display-dates').innerText = dateText;
+      document.getElementById('display-travelers').innerText = tripMeta.travelers || "Group Travel";
+
+      // Pinned Info
+      document.getElementById('quick-flight-info').innerText = tripMeta.pinned?.flight || "Flight details not set";
+      document.getElementById('quick-hotel-info').innerText = tripMeta.pinned?.hotel || "Hotel details not set";
+      document.getElementById('quick-emergency-info').innerText = tripMeta.pinned?.emergency || "Emergency contact not set";
+      document.getElementById('quick-insurance-info').innerText = tripMeta.pinned?.insurance || "Insurance info not set";
+    }
+
+    function renderDayTabs() {
+      const days = getTripDaysArray();
+      const container = document.getElementById('day-selector-container');
+      container.innerHTML = '';
+
+      if (activeDayIndex >= days.length) activeDayIndex = 0;
+
+      days.forEach((day, idx) => {
+        const btn = document.createElement('button');
+        const isActive = idx === activeDayIndex;
+        btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
+          isActive 
+            ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20' 
+            : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+        }`;
+        btn.innerHTML = `<span>Day ${idx + 1}</span> <span class="text-[10px] opacity-80">(${day.dateStr})</span>`;
+        btn.onclick = () => {
+          activeDayIndex = idx;
+          renderDayTabs();
+          renderItinerary();
+        };
+        container.appendChild(btn);
+      });
+
+      // Update Modal Select Day dropdown
+      const formDaySelect = document.getElementById('form-item-day');
+      if (formDaySelect) {
+        formDaySelect.innerHTML = days.map((d, i) => `<option value="${i}">Day ${i + 1} (${d.dateStr})</option>`).join('');
+      }
+    }
+
+    function renderItinerary() {
+      const container = document.getElementById('itinerary-items-list');
+      const emptyState = document.getElementById('itinerary-empty-state');
+      container.innerHTML = '';
+
+      // Filter by Active Day & Category
+      let filtered = itineraryItems.filter(item => Number(item.dayIndex) === activeDayIndex);
+
+      if (selectedCategoryFilter !== 'ALL') {
+        filtered = filtered.filter(item => item.category === selectedCategoryFilter);
+      }
+
+      // Sort items by time string
+      filtered.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      const categoryIcons = {
+        'Flight': '✈️',
+        'Hotel': '🏨',
+        'Activity': '🧗',
+        'Food': '🍽️',
+        'Transport': '🚕'
+      };
+
+      const categoryColors = {
+        'Flight': 'bg-sky-50 text-sky-700 border-sky-200',
+        'Hotel': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        'Activity': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'Food': 'bg-amber-50 text-amber-700 border-amber-200',
+        'Transport': 'bg-purple-50 text-purple-700 border-purple-200'
+      };
+
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative group ${item.completed ? 'opacity-60 bg-slate-50' : ''}`;
+
+        const isMapUrl = item.location && (item.location.startsWith('http://') || item.location.startsWith('https://'));
+        const locationHTML = item.location 
+          ? (isMapUrl 
+              ? `<a href="${item.location}" target="_blank" rel="noopener" class="text-teal-600 hover:underline flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Google Maps Link</a>` 
+              : `<span class="flex items-center gap-1 text-slate-500"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> ${escapeHTML(item.location)}</span>`)
+          : '';
+
+        card.innerHTML = `
+          <div class="flex items-start gap-3.5 w-full sm:w-auto">
+            <button onclick="window.toggleItemComplete('${item.id}', ${!item.completed})" class="mt-0.5 p-1 rounded-lg border transition ${item.completed ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300 text-transparent hover:border-teal-500'}">
+              <i data-lucide="check" class="w-4 h-4"></i>
+            </button>
+
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-bold text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">${escapeHTML(item.time || 'All Day')}</span>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-md border ${categoryColors[item.category] || 'bg-slate-100 text-slate-700'}">
+                  ${categoryIcons[item.category] || '📍'} ${item.category}
+                </span>
+                ${item.assignee ? `<span class="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> ${escapeHTML(item.assignee)}</span>` : ''}
+              </div>
+
+              <h4 class="font-bold text-base text-slate-800 ${item.completed ? 'line-through text-slate-400' : ''}">
+                ${escapeHTML(item.title)}
+              </h4>
+
+              <div class="flex flex-wrap items-center gap-3 text-xs">
+                ${locationHTML}
+                ${item.cost > 0 ? `<span class="font-bold text-emerald-600 flex items-center gap-0.5"><i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i>${Number(item.cost).toFixed(2)}</span>` : ''}
+              </div>
+
+              ${item.notes ? `<p class="text-xs text-slate-500 mt-1 bg-slate-50 p-2 rounded-xl border border-slate-100">${escapeHTML(item.notes)}</p>` : ''}
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-1 self-end sm:self-center">
+            <button onclick="window.openEditItemModal('${item.id}')" class="p-2 text-slate-400 hover:text-teal-600 rounded-xl hover:bg-slate-100 transition">
+              <i data-lucide="edit-2" class="w-4 h-4"></i>
+            </button>
+            <button onclick="window.deleteItem('${item.id}')" class="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-slate-100 transition">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function renderBudget() {
+      let total = 0;
+      const categories = { Flight: 0, Hotel: 0, Activity: 0, Food: 0, Transport: 0 };
+      
+      const tbody = document.getElementById('budget-table-body');
+      tbody.innerHTML = '';
+
+      let itemsWithCost = 0;
+
+      itineraryItems.forEach(item => {
+        const costVal = parseFloat(item.cost) || 0;
+        if (costVal > 0) {
+          total += costVal;
+          itemsWithCost++;
+          if (categories[item.category] !== undefined) {
+            categories[item.category] += costVal;
+          }
+
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-slate-50/80 transition";
+          tr.innerHTML = `
+            <td class="p-3 font-semibold text-slate-800">${escapeHTML(item.title)}</td>
+            <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-100 font-medium">${item.category}</span></td>
+            <td class="p-3 text-slate-500">${escapeHTML(item.assignee || 'Shared')}</td>
+            <td class="p-3 text-right font-mono font-bold text-slate-900">$${costVal.toFixed(2)}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      });
+
+      document.getElementById('stat-total-budget').innerText = `$${total.toFixed(2)}`;
+      document.getElementById('stat-budget-breakdown').innerText = `${itemsWithCost} costed items total`;
+
+      // Category Summary Card List
+      const catList = document.getElementById('budget-category-list');
+      catList.innerHTML = '';
+      
+      Object.keys(categories).forEach(cat => {
+        const val = categories[cat];
+        const percent = total > 0 ? (val / total) * 100 : 0;
+        
+        const row = document.createElement('div');
+        row.className = "space-y-1";
+        row.innerHTML = `
+          <div class="flex justify-between text-xs font-semibold">
+            <span class="text-slate-600">${cat}</span>
+            <span class="font-bold text-slate-800">$${val.toFixed(2)} (${percent.toFixed(0)}%)</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-teal-500 h-1.5 rounded-full" style="width: ${percent}%"></div>
+          </div>
+        `;
+        catList.appendChild(row);
+      });
+    }
+
+    function renderPackingList() {
+      const container = document.getElementById('packing-items-grid');
+      const empty = document.getElementById('packing-empty-state');
+      container.innerHTML = '';
+
+      if (packingItems.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      } else {
+        empty.classList.add('hidden');
+      }
+
+      packingItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-2xl border transition flex items-center justify-between gap-2 ${
+          item.packed 
+            ? 'bg-slate-50 border-slate-200 text-slate-400' 
+            : 'bg-white border-slate-200/80 hover:border-teal-300 shadow-sm'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-center space-x-3 overflow-hidden">
+            <button onclick="window.togglePackingPacked('${item.id}', ${!item.packed})" class="p-1 rounded-lg border transition ${
+              item.packed ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300 text-transparent hover:border-teal-500'
+            }">
+              <i data-lucide="check" class="w-4 h-4"></i>
+            </button>
+            <div class="truncate">
+              <p class="font-bold text-xs text-slate-800 ${item.packed ? 'line-through text-slate-400' : ''}">${escapeHTML(item.title)}</p>
+              ${item.assignee ? `<p class="text-[10px] text-slate-400">Assigned: ${escapeHTML(item.assignee)}</p>` : ''}
+            </div>
+          </div>
+          <button onclick="window.deletePackingItem('${item.id}')" class="p-1 text-slate-300 hover:text-rose-500 rounded-lg transition">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        `;
+
+        container.appendChild(card);
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    // 5. Database CRUD Functions (Realtime sync)
+    window.toggleItemComplete = async (itemId, completed) => {
+      if (!currentUser) return;
+      const ref = doc(db, 'artifacts', appId, 'public', 'data', `trip_${currentRoomId}_itinerary`, itemId);
+      await updateDoc(ref, { completed });
+    };
+
+    window.deleteItem = async (itemId) => {
+      if (!currentUser) return;
+      const ref = doc(db, 'artifacts', appId, 'public', 'data', `trip_${currentRoomId}_itinerary`, itemId);
+      await deleteDoc(ref);
+    };
+
+    window.openEditItemModal = (itemId) => {
+      const item = itineraryItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      document.getElementById('modal-item-title').innerText = "Edit Schedule Item";
+      document.getElementById('form-item-id').value = item.id;
+      document.getElementById('form-item-day').value = item.dayIndex || 0;
+      document.getElementById('form-item-time').value = item.time || '';
+      document.getElementById('form-item-title-input').value = item.title || '';
+      document.getElementById('form-item-category').value = item.category || 'Activity';
+      document.getElementById('form-item-cost').value = item.cost || '';
+      document.getElementById('form-item-location').value = item.location || '';
+      document.getElementById('form-item-assignee').value = item.assignee || '';
+      document.getElementById('form-item-notes').value = item.notes || '';
+
+      document.getElementById('modal-item').classList.remove('hidden');
+    };
+
+    window.togglePackingPacked = async (id, packed) => {
+      if (!currentUser) return;
+      const ref = doc(db, 'artifacts', appId, 'public', 'data', `trip_${currentRoomId}_packing`, id);
+      await updateDoc(ref, { packed });
+    };
+
+    window.deletePackingItem = async (id) => {
+      if (!currentUser) return;
+      const ref = doc(db, 'artifacts', appId, 'public', 'data', `trip_${currentRoomId}_packing`, id);
+      await deleteDoc(ref);
+    };
+
+    // Form Event Listeners
+    document.getElementById('form-item').onsubmit = async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const id = document.getElementById('form-item-id').value;
+      const payload = {
+        dayIndex: Number(document.getElementById('form-item-day').value),
+        time: document.getElementById('form-item-time').value,
+        title: document.getElementById('form-item-title-input').value,
+        category: document.getElementById('form-item-category').value,
+        cost: parseFloat(document.getElementById('form-item-cost').value) || 0,
+        location: document.getElementById('form-item-location').value,
+        assignee: document.getElementById('form-item-assignee').value,
+        notes: document.getElementById('form-item-notes').value,
+        completed: false
+      };
+
+      const colRef = collection(db, 'artifacts', appId, 'public', 'data', `trip_${currentRoomId}_itinerary`);
+
+      if (id) {
+        const itemRef = doc(colRef, id);
+        await updateDoc(itemRef, payload);
+      } else {
+        await addDoc(colRef, payload);
+      }
+
+      document.getElementById('modal-item').classList.add('hidden');
+    };
+
+    document.getElementById('form-trip').onsubmit = async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      tripMeta.title = document.getElementById('input-trip-title').value;
+      tripMeta.destination = document.getElementById('input-trip-destination').value;
+      tripMeta.startDate = document.getElementById('input-trip-start').value;
+      tripMeta.endDate = document.getElementById('input-trip-end').value;
+      tripMeta.travelers = document.getElementById('input-trip-travelers').value;
+
+      const metaRef = doc(db, 'artifacts', appId, 'public', 'data', `trip_${currentRoomId}_meta`, 'info');
+      await setDoc(metaRef, tripMeta, { merge: true });
+
+      document.getElementById('modal-trip').classList.add('hidden');
+    };
+
+    document.getElementById('form-pinned').onsubmit = async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      tripMeta.pinned = {
+        flight: document.getElementById('input-pinned-flight').value,
+        hotel: document.getElementById('input-pinned-hotel').value,
+        emergency: document.getElementById('input-pinned-emergency').value,
+        insurance: document.getElementById('input-pinned-insurance').value
+      };
+
+      const metaRef = doc(db, 'artifacts', appId, 'public', 'data', `trip_${currentRoomId}_meta`, 'info');
+      await setDoc(metaRef, tripMeta, { merge: true });
+
+      document.getElementById('modal-pinned').classList.add('hidden');
+    };
+
+    document.getElementById('form-add-packing').onsubmit = async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const title = document.getElementById('input-packing-title').value;
+      const assignee = document.getElementById('input-packing-assignee').value;
+
+      const colRef = collection(db, 'artifacts', appId, 'public', 'data', `trip_${currentRoomId}_packing`);
+      await addDoc(colRef, {
+        title,
+        assignee,
+        packed: false
+      });
+
+      document.getElementById('input-packing-title').value = '';
+      document.getElementById('input-packing-assignee').value = '';
+    };
+
+    // 6. UI & Modal Controller Triggers
+    document.getElementById('btn-open-add-item').onclick = () => {
+      document.getElementById('form-item').reset();
+      document.getElementById('form-item-id').value = '';
+      document.getElementById('modal-item-title').innerText = "Add Schedule Item";
+      document.getElementById('form-item-day').value = activeDayIndex;
+      document.getElementById('modal-item').classList.remove('hidden');
+    };
+
+    document.querySelectorAll('.btn-trigger-add-item').forEach(btn => {
+      btn.onclick = () => document.getElementById('btn-open-add-item').click();
+    });
+
+    document.getElementById('btn-close-item-modal').onclick = () => document.getElementById('modal-item').classList.add('hidden');
+    document.getElementById('btn-cancel-item').onclick = () => document.getElementById('modal-item').classList.add('hidden');
+
+    document.getElementById('btn-edit-trip').onclick = () => {
+      document.getElementById('input-trip-title').value = tripMeta.title || '';
+      document.getElementById('input-trip-destination').value = tripMeta.destination || '';
+      document.getElementById('input-trip-start').value = tripMeta.startDate || '';
+      document.getElementById('input-trip-end').value = tripMeta.endDate || '';
+      document.getElementById('input-trip-travelers').value = tripMeta.travelers || '';
+      document.getElementById('modal-trip').classList.remove('hidden');
+    };
+
+    document.getElementById('btn-close-trip-modal').onclick = () => document.getElementById('modal-trip').classList.add('hidden');
+    document.getElementById('btn-cancel-trip').onclick = () => document.getElementById('modal-trip').classList.add('hidden');
+
+    document.getElementById('btn-edit-pinned').onclick = () => {
+      document.getElementById('input-pinned-flight').value = tripMeta.pinned?.flight || '';
+      document.getElementById('input-pinned-hotel').value = tripMeta.pinned?.hotel || '';
+      document.getElementById('input-pinned-emergency').value = tripMeta.pinned?.emergency || '';
+      document.getElementById('input-pinned-insurance').value = tripMeta.pinned?.insurance || '';
+      document.getElementById('modal-pinned').classList.remove('hidden');
+    };
+
+    document.getElementById('btn-close-pinned-modal').onclick = () => document.getElementById('modal-pinned').classList.add('hidden');
+    document.getElementById('btn-cancel-pinned').onclick = () => document.getElementById('modal-pinned').classList.add('hidden');
+
+    // Switch Room Modal
+    document.getElementById('btn-switch-room').onclick = () => {
+      document.getElementById('input-room-code').value = currentRoomId;
+      document.getElementById('modal-room').classList.remove('hidden');
+    };
+    document.getElementById('btn-close-room-modal').onclick = () => document.getElementById('modal-room').classList.add('hidden');
+    document.getElementById('btn-join-room-confirm').onclick = () => {
+      const code = document.getElementById('input-room-code').value.trim().toLowerCase();
+      if (code) {
+        currentRoomId = code;
+        setRoomHash(code);
+        setupRoomListeners(code);
+        document.getElementById('modal-room').classList.add('hidden');
+      }
+    };
+
+    // Tab Navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        const target = btn.getAttribute('data-tab');
+        
+        // Tab UI state
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.className = "tab-btn font-semibold text-sm text-slate-500 hover:text-slate-800 border-b-2 border-transparent pb-3 flex items-center gap-2 whitespace-nowrap";
+        });
+        btn.className = "tab-btn font-bold text-sm text-teal-600 border-b-2 border-teal-600 pb-3 flex items-center gap-2 whitespace-nowrap";
+
+        // Tab Content visibility
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(target).classList.remove('hidden');
+      };
+    });
+
+    // Category Filter Dropdown
+    document.getElementById('filter-category').onchange = (e) => {
+      selectedCategoryFilter = e.target.value;
+      renderItinerary();
+    };
+
+    // Share link button
+    document.getElementById('btn-share').onclick = () => {
+      const shareUrl = window.location.href;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl);
+        alert(`Link copied to clipboard!\n\nSend this link to anyone in your travel group so they can view and edit the itinerary live:\n${shareUrl}`);
+      } else {
+        alert(`Share this link with your travel group:\n${shareUrl}`);
+      }
+    };
+
+    // Hash change event (if user manually changes URL hash)
+    window.onhashchange = () => {
+      const newRoom = getRoomFromHash();
+      if (newRoom && newRoom !== currentRoomId) {
+        currentRoomId = newRoom;
+        document.getElementById('current-room-display').innerText = currentRoomId.toUpperCase();
+        setupRoomListeners(currentRoomId);
+      }
+    };
+
+    // Initialize Auth & App
+    window.onload = () => {
+      if (window.lucide) window.lucide.createIcons();
+      initAuth();
+    };
+  </script>
+</body>
+</html>
